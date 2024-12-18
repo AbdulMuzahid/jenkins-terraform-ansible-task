@@ -1,63 +1,43 @@
-provider "aws" {
-  region = "us-east-1"
-}
-
-resource "aws_instance" "backend" { #ubuntu.yaml NETADATA
-  ami                    = "ami-0fc5d935ebf8bc3bc"
-  instance_type          = "t2.micro" 
-  key_name               = "ubuntu-key"
-  vpc_security_group_ids = ["sg-04cb5f715d70d6f35"]
   tags = {
-    Name = "u21.local"
+    Name = "my-elastic-ip-007"
+  }
+}
+resource "aws_instance" "ec2-ec2_ubuntuServer" {
+  ami           = "ami-075449515af5df0d1"
+  instance_type = "t3.micro"
+  subnet_id     = aws_subnet.subnet.id
+  security_groups = [aws_security_group.my_sg.id]
+  key_name = "Linux-Testing"
+  tags = {
+    Name = "ec2_ubuntuServer"
   }
   user_data = <<-EOF
-  #!/bin/bash
-  sudo hostnamectl set-hostname U21.local
-  # netdata_conf="/etc/netdata/netdata.conf"
-  # Path to netdata.conf
-  # actual_ip=0.0.0.0
-  # Use sed to replace the IP address in netdata.conf
-  # sudo sed -i "s/bind socket to IP = .*$/bind socket to IP = $actual_ip/" "$netdata_conf"
-EOF
-
-}
-
-resource "aws_instance" "frontend" { #amazon-playbook.yaml NGINX
-  ami                    = "ami-05c13eab67c5d8861"
-  instance_type          = "t2.micro"
-  key_name               = "linux"
-  vpc_security_group_ids = ["sg-04cb5f715d70d6f35"]
-  tags = {
-    Name = "c8.local"
+              #!/bin/bash
+              sudo apt update -y
+              sudo apt install apache2 -y
+              sudo systemctl enable apache2
+              sudo systemctl start apache2
+              EOF
   }
-  user_data = <<-EOF
-  #!/bin/bash
-  # New hostname and IP address
-  sudo hostnamectl set-hostname u21.local
-  hostname=$(hostname)
-  public_ip="$(curl -s https://api64.ipify.org?format=json | jq -r .ip)"
-
-  # Path to /etc/hosts
-  echo "${aws_instance.backend.public_ip} $hostname" | sudo tee -a /etc/hosts
-
-EOF
-depends_on = [aws_instance.backend]
+  resource "aws_s3_bucket" "s3_bucket" {
+ bucket = "s3terraform129"
+    acl = "private"
+  }
+resource "aws_dynamodb_table" "dynamodb-terraform-state-lock" {
+  name = "terraform-state-lock"
+  hash_key = "LockID"
+  read_capacity = 20
+  write_capacity = 20
+ attribute {
+  name = "LockID"
+    type = "S"
+  }
 }
-
-resource "local_file" "inventory" {
-  filename = "./inventory.yaml"
-  content  = <<EOF
-[frontend]
-${aws_instance.frontend.public_ip}
-[backend]
-${aws_instance.backend.public_ip}
-EOF
-}
-
-output "frontend_public_ip" {
-  value = aws_instance.frontend.public_ip
-}
-
-output "backend_public_ip" {
-  value = aws_instance.backend.public_ip
+terraform {
+  backend "s3" {
+    bucket = "s3terraform129"
+    dynamodb_table = "terraform-state-lock"
+    key    = "terraform.tfstate"
+    region = "eu-north-1"
+  }
 }
