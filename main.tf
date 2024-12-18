@@ -1,12 +1,12 @@
 provider "aws" {
-  region = "us-east-1"
+  region = "eu-north-1"
 }
 
 resource "aws_instance" "backend" { #ubuntu.yaml NETADATA
-  ami                    = "ami-0fc5d935ebf8bc3bc"
-  instance_type          = "t2.micro" 
-  key_name               = "ubuntu-key"
-  vpc_security_group_ids = ["sg-04cb5f715d70d6f35"]
+  ami                    = "ami-089146c5626baa6bf"
+  instance_type          = "t3.micro" 
+  key_name               = "Linux_Test"
+  vpc_security_group_ids = ["sg-04aeae350a928716e"]
   tags = {
     Name = "u21.local"
   }
@@ -23,17 +23,17 @@ EOF
 }
 
 resource "aws_instance" "frontend" { #amazon-playbook.yaml NGINX
-  ami                    = "ami-05c13eab67c5d8861"
-  instance_type          = "t2.micro"
-  key_name               = "linux"
-  vpc_security_group_ids = ["sg-04cb5f715d70d6f35"]
+  ami                    = "ami-02a0945ba27a488b7"
+  instance_type          = "t3.micro"
+  key_name               = "Linux_Test"
+  vpc_security_group_ids = ["sg-08134c7d1792a6d02"]
   tags = {
     Name = "c8.local"
   }
   user_data = <<-EOF
   #!/bin/bash
   # New hostname and IP address
-  sudo hostnamectl set-hostname u21.local
+  sudo hostnamectl set-hostname c8.local
   hostname=$(hostname)
   public_ip="$(curl -s https://api64.ipify.org?format=json | jq -r .ip)"
 
